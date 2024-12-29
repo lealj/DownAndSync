@@ -56,32 +56,32 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
         liked_videos = []
         next_page_token = None  # Start without a page token
         
-        while True:
+        #while True:
             # Make a request to the 'videos' endpoint to fetch liked videos
-            request = youtube.videos().list(
-                part="snippet,contentDetails",
-                myRating="like",  # Fetch liked videos
-                maxResults=50,     # Maximum results per request
-                pageToken=next_page_token  # Use the next page token if it exists
-            )
-            
-            response = request.execute()
-            
-            # Process the response to extract video details
-            for item in response.get('items', []):
-                video_id = item['id']
-                title = item['snippet']['title']
-                liked_videos.append({
-                    "video_id": video_id,
-                    "title": title
-                })
+        request = youtube.videos().list(
+            part="snippet,contentDetails",
+            myRating="like",  # Fetch liked videos
+            maxResults=5,     # Maximum results per request
+            pageToken=next_page_token  # Use the next page token if it exists
+        )
+        
+        response = request.execute()
+        
+        # Process the response to extract video details
+        for item in response.get('items', []):
+            video_id = item['id']
+            title = item['snippet']['title']
+            liked_videos.append({
+                "video_id": video_id,
+                "title": title
+            })
         
             # Check if there is a next page to continue fetching
-            next_page_token = response.get('nextPageToken')
+        #    next_page_token = response.get('nextPageToken')
         
             # If no more pages, break the loop 
-            if not next_page_token:
-                break
+        #    if not next_page_token:
+        #        break
         
         with open(output_file, 'w') as json_file:
             json.dump(liked_videos, json_file, indent=4)

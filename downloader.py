@@ -31,7 +31,12 @@ def download_video(video_id, output_path, video_title, format='bestaudio'):
         'quiet': True,
         'noplaylist': True,
         'extractaudio': True,
-        'reject': ['webm']
+        'reject': ['webm'],
+        'postprocessors': [
+            {'key': 'FFmpegMetadata'},
+            {'key': 'EmbedThumbnail'},
+        ],
+        'ffmpeg_location': r'C:\Users\lealj\OneDrive\Documents\GitHub\DownAndSync\ffmpeg\bin'
     }
 
     try:

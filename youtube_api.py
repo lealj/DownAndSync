@@ -24,17 +24,25 @@ def youtube_authentication():
     # If no valid credentials, request new ones
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES
-            )
-            creds = flow.run_local_server(port=0)
-
-        # Save credentials to token.json
-        with open(token_file, 'w') as token:
-            token.write(creds.to_json())
-        
+            try:
+                creds.refresh(Request())
+                with open(token_file, 'w') as token:
+                    token.write(creds.to_json())
+                print("Token successfully refreshed")
+            except Exception as e:
+                print(f"Error refreshing token: {e}")
+        if not creds or not creds.valid:  # If still no valid creds, request new ones
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES
+                )
+                creds = flow.run_local_server(port=0)
+                # Save the new credentials to token.json
+                with open(token_file, 'w') as token:
+                    token.write(creds.to_json())
+                print("New credentials generated and saved.")
+            except Exception as e:
+                print(f"Error during authorization: {e}")
     return creds
 
 

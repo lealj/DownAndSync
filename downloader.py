@@ -39,6 +39,8 @@ def download_video(video_id, output_path, video_title, format='bestaudio'):
             result = ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
             if result == 0:
                 print(f"{video_title} downloaded successfully.")
+            else:
+                print(f"Issue downloading {video_title}.")
     except Exception as e:
         print(f"Error downloading video {video_title}: {e}")
 

@@ -15,7 +15,7 @@ import threading
 ''' Notes:
 - Ctr + Shft + J to beautify json
 - Figure out what to do about the button / message when a user is already authenticated. Sketchy cuz the token could expire. 
-- 
+- Test new authorization
 '''
 class OutputStream:
     """
@@ -37,6 +37,7 @@ class OutputStream:
 
 
 class DirectoryInputApp(QWidget):
+    creds = None
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Directory Path Input")
@@ -46,7 +47,7 @@ class DirectoryInputApp(QWidget):
 
         # Authentication with youtube
         login_button = QPushButton("Authorize Youtube")
-        login_button.clicked.connect(youtube_api.youtube_authentication)
+        login_button.clicked.connect(self.set_creds)
         main_layout.addWidget(login_button)
 
         main_layout.addLayout(self.create_directory_input_widget())
@@ -164,14 +165,21 @@ class DirectoryInputApp(QWidget):
 
 
     def fetch_liked_videos(self):
-        creds = youtube_api.youtube_authentication()
-        youtube_api.fetch_liked_videos(creds)
+        if not self.creds:
+            print("Youtube credentials not set, authorize youtube access.")
+            return
+        youtube_api.fetch_liked_videos(self.creds)
         download_liked_videos()
     
     
     def cancel_download_liked_videos(self):
         self.cancel_download = True
         print("Cancel downloading requested")
+
+
+    def set_creds(self):
+        self.creds = youtube_api.youtube_authentication()
+
         
 
 if __name__ == "__main__":

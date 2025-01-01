@@ -169,7 +169,7 @@ class DirectoryInputApp(QWidget):
             print("Youtube credentials not set, authorize youtube access.")
             return
         youtube_api.fetch_liked_videos(self.creds)
-        download_liked_videos()
+        download_liked_videos(self)
     
     
     def cancel_download_liked_videos(self):

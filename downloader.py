@@ -5,10 +5,13 @@ import json
 import initialize
 import time
 
-def download_liked_videos():
+def download_liked_videos(app):
     videos = load_liked_videos_from_json()
 
     for v in videos:
+        if app.cancel_download:
+            print("Download process canceled.")
+            break
         try:
             file_name = f"{v['title']}"
             output_path = os.path.join(initialize.get_directory_path(), f"{file_name}.%(ext)s")
@@ -22,6 +25,7 @@ def download_liked_videos():
             time.sleep(5) 
         except Exception as e:
             pass
+    print("Download process complete.")
 
 
 def download_video(video_id, output_path, video_title, format='bestaudio'):
@@ -29,7 +33,7 @@ def download_video(video_id, output_path, video_title, format='bestaudio'):
         'format': 'bestaudio[ext!=webm]/best[ext!=webm]',
         'outtmpl': output_path,
         'quiet': True,
-        'noplaylist': True,
+        'noplaylist': False,
         'extractaudio': True,
         'reject': ['webm']
     }

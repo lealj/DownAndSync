@@ -8,9 +8,10 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QTextCursor
 import initialize
+import threading
 import youtube_api
 from downloader import download_liked_videos
-import threading
+import spotify_api
 
 ''' Notes:
 - Ctr + Shft + J to beautify json
@@ -41,18 +42,22 @@ class OutputStream:
 
 
 class DirectoryInputApp(QWidget):
-    creds = None
+    youtube_creds = None
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Directory Path Input")
+        self.setWindowTitle("DownAndSync")
         
         # Create layout
         main_layout = QVBoxLayout()
 
         # Authentication with youtube
-        login_button = QPushButton("Authorize Youtube")
-        login_button.clicked.connect(self.set_creds)
-        main_layout.addWidget(login_button)
+        youtube_auth_button = QPushButton("Authorize Youtube")
+        youtube_auth_button.clicked.connect(self.set_youtube_creds)
+        main_layout.addWidget(youtube_auth_button)
+
+        spotify_auth_button = QPushButton("Authorize Spotify")
+        spotify_auth_button.clicked.connect(self.set_spotify_creds)
+        main_layout.addWidget(spotify_auth_button)
 
         main_layout.addLayout(self.create_directory_input_widget())
 
@@ -109,6 +114,7 @@ class DirectoryInputApp(QWidget):
 
         return layout
     
+
     def create_downloading_process_widget(self):
         """
         Creates the download and cancel button, returns a layout.
@@ -173,12 +179,11 @@ class DirectoryInputApp(QWidget):
 
 
     def fetch_liked_videos(self):
-        self.set_creds()
-        if not self.creds:
+        if not self.youtube_creds:
             print("Youtube credentials not set, authorize youtube access.")
             return
-        youtube_api.fetch_liked_videos(self.creds)
-        download_liked_videos()
+        youtube_api.fetch_liked_videos(self.youtube_creds)
+        download_liked_videos(self)
     
     
     def cancel_download_liked_videos(self):
@@ -186,6 +191,13 @@ class DirectoryInputApp(QWidget):
         print("Cancel downloading requested")
 
         
+    def set_youtube_creds(self):
+        self.youtube_creds = youtube_api.youtube_authentication()
+
+        
+    def set_spotify_creds(self):
+        self.spotify_creds = spotify_api.spotify_authentication()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

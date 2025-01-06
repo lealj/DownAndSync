@@ -20,6 +20,7 @@ def youtube_authentication():
     # Check if token.json exists (to reuse credentials)
     if os.path.exists(token_file):
         creds = Credentials.from_authorized_user_file(token_file, SCOPES)
+        print("Credentials retrieved.")
 
     # If no valid credentials, request new ones
     if not creds or not creds.valid:
@@ -77,6 +78,7 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
             })
         
             # Check if there is a next page to continue fetching
+
         #    next_page_token = response.get('nextPageToken')
         
             # If no more pages, break the loop 

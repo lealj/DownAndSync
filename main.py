@@ -27,14 +27,18 @@ class OutputStream:
 
 
     def write(self, message):
-        if message.strip():  # Ignore empty lines
-            timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")  # Format timestamp
-            self.text_edit.append(f"{timestamp} {message.strip()}")  # Prepend timestamp to the message
+        if message.strip():
+            # Write to the QTextEdit 'terminal' widget
+            timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+            self.text_edit.append(f"{timestamp} {message.strip()}")
             self.text_edit.moveCursor(QTextCursor.MoveOperation.End)
+            
+            # Also write to the original stream (terminal)
+            self.original_stream.write(message)
 
 
     def flush(self):
-        pass
+        self.original_stream.flush()
 
 
 class DirectoryInputApp(QWidget):
@@ -73,8 +77,8 @@ class DirectoryInputApp(QWidget):
         self.setLayout(main_layout)
         self.load_existing_directory_path()
 
-        sys.stdout = OutputStream(self.terminal)
-        sys.stderr = OutputStream(self.terminal)
+        sys.stdout = OutputStream(self.terminal, sys.__stdout__)
+        sys.stderr = OutputStream(self.terminal, sys.__stderr__)
 
     
     def create_directory_input_widget(self):
@@ -170,6 +174,10 @@ class DirectoryInputApp(QWidget):
         self.download_thread.start()
 
 
+    def set_creds(self):
+        self.creds = youtube_api.youtube_authentication()
+
+
     def fetch_liked_videos(self):
         if not self.youtube_creds:
             print("Youtube credentials not set, authorize youtube access.")
@@ -182,10 +190,11 @@ class DirectoryInputApp(QWidget):
         self.cancel_download = True
         print("Cancel downloading requested")
 
-
+        
     def set_youtube_creds(self):
         self.youtube_creds = youtube_api.youtube_authentication()
 
+        
     def set_spotify_creds(self):
         self.spotify_creds = spotify_api.spotify_authentication()
 

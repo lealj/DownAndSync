@@ -57,8 +57,8 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
         liked_videos = []
         next_page_token = None  # Start without a page token
         
-        # while True:
-        # Make a request to the 'videos' endpoint to fetch liked videos
+        #while True:
+            # Make a request to the 'videos' endpoint to fetch liked videos
         request = youtube.videos().list(
             part="snippet,contentDetails",
             myRating="like",  # Fetch liked videos
@@ -76,8 +76,9 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
                 "video_id": video_id,
                 "title": title
             })
-    
-        # Check if there is a next page to continue fetching
+        
+            # Check if there is a next page to continue fetching
+
         #    next_page_token = response.get('nextPageToken')
         
             # If no more pages, break the loop 

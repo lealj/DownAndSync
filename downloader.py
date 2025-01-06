@@ -22,6 +22,7 @@ def download_liked_videos(app):
                 continue
 
             download_video(v['video_id'], output_path, v['title'])
+            # print_video_download_options(v['video_id'])
             time.sleep(5) 
         except Exception as e:
             pass
@@ -63,3 +64,24 @@ def load_liked_videos_from_json(file_path='liked_videos.json'):
         print(f"Error loading liked videos: {e}")
         return []
 
+
+def print_video_download_options(video_id):
+    '''
+    Testing - prints download options for the video
+    '''
+    ydl_opts = {
+        'quiet': True,
+        'simulate': True,
+        'format': 'all',
+    }
+
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            print(f"Available download options for video ID: {video_id}")
+            info_dict = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+            formats = info_dict.get('formats', [])
+            
+            for f in formats:
+                print(f"Format ID: {f['format_id']}, Extension: {f['ext']}, Resolution: {f.get('resolution', 'N/A')}, Note: {f.get('format_note', 'N/A')}")
+    except Exception as e:
+        print(f"Error fetching download options for video ID {video_id}: {e}")

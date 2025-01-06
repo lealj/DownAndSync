@@ -8,6 +8,7 @@ DEFAULT_CONFIG = {
     "directory_path": ""
 }
 
+
 def ensure_config_directory():
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 

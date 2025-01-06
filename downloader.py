@@ -22,7 +22,6 @@ def download_liked_videos(app):
                 continue
 
             download_video(v['video_id'], output_path, v['title'])
-            # print_video_download_options(v['video_id'])
             time.sleep(5) 
         except Exception as e:
             pass

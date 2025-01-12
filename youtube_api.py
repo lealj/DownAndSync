@@ -8,7 +8,7 @@ import json
 # Scopes define the access the app needs.
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
-def youtube_authentication():
+def youtube_authentication() -> Credentials:
     """
     Handles YouTube OAuth 2.0 authentication.
     """
@@ -48,11 +48,11 @@ def youtube_authentication():
 
 
 # More efficient way to manage liked videos
-def fetch_liked_videos(creds, output_file='liked_videos.json'):
+def fetch_liked_videos(creds, output_file='liked_videos.json') -> list:
     """
     Fetches the user's liked videos using the YouTube Data API, continuing to make requests until all liked videos are fetched.
     """
-    def sanitize_start(value):
+    def sanitize_start(value: str) -> str:
         """
         Santize song title and artist name, so that they don't start with invalid characters.
         For creating files later without error.

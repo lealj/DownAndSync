@@ -9,11 +9,11 @@ DEFAULT_CONFIG = {
 }
 
 
-def ensure_config_directory():
+def ensure_config_directory() -> None:
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 
 
-def initialize_config():
+def initialize_config() -> None:
     ensure_config_directory()
     if not os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'w') as file:
@@ -21,7 +21,7 @@ def initialize_config():
         print(f"Default config.json created at {CONFIG_FILE}")
 
 
-def load_config():
+def load_config() -> dict:
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r') as file:
             return json.load(file)
@@ -34,13 +34,13 @@ def get_directory_path():
     return directory_path
 
 
-def save_config(data):
+def save_config(data) -> None:
     with open(CONFIG_FILE, 'w') as file:
         json.dump(data, file, indent=4)
     print(f"Config saved to {CONFIG_FILE}")
 
 
-def get_directory_path():
+def get_directory_path() -> str:
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r') as file:
             config = json.load(file)

@@ -2,7 +2,7 @@ import sys
 import os
 import datetime
 import json
-from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtCore import QSize, Qt, QThread
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QFileDialog, QLabel, QHBoxLayout, QTextEdit
 )
@@ -27,7 +27,7 @@ class OutputStream:
         self.original_stream = original_stream
 
 
-    def write(self, message):
+    def write(self, message: str):
         if message.strip():
             # Write to the QTextEdit 'terminal' widget
             timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -65,9 +65,9 @@ class DirectoryInputApp(QWidget):
 
         main_layout.addLayout(self.create_directory_input_widget())
 
-        # Thread / Cancel Flag
+        # Thread vars
         self.download_thread = None
-        self.cancel_downloads = False
+        self.worker = False
 
         main_layout.addLayout(self.create_downloading_process_widget())
 
@@ -85,7 +85,7 @@ class DirectoryInputApp(QWidget):
         sys.stderr = OutputStream(self.terminal, sys.__stderr__)
 
     
-    def create_directory_input_widget(self):
+    def create_directory_input_widget(self) -> QVBoxLayout:
         """
         Creates the label, QLineEdit, and QPushButton for directory input.
         Returns the layout containing these widgets.
@@ -119,7 +119,7 @@ class DirectoryInputApp(QWidget):
         return layout
     
 
-    def create_downloading_process_widget(self):
+    def create_downloading_process_widget(self) -> QHBoxLayout:
         """
         Creates the download and cancel button, returns a layout.
         """
@@ -135,25 +135,36 @@ class DirectoryInputApp(QWidget):
         return layout
     
 
-    def start_downloading_liked_videos(self):
-        if self.download_thread and self.download_thread.is_alive():
+    def start_downloading_liked_videos(self) -> None:
+        def fetch_liked_videos() -> None:
+            if not self.youtube_creds:
+                print("Youtube credentials not set, prompting authorize youtube process:")
+                self.set_youtube_creds()
+            youtube_api.fetch_liked_videos(self.youtube_creds)
+
+        fetch_liked_videos()
+        if self.download_thread and self.download_thread.isRunning():
             print("Download process is already running.")
             return
         
-        self.cancel_download = False  # Reset the cancellation flag
-        self.download_thread = threading.Thread(target=self.fetch_liked_videos)
+        self.worker = downloader.DownloadWorker(self)
+        self.download_thread = QThread()
+
+        self.worker.moveToThread(self.download_thread)
+
+        # Connect signals
+        self.worker.progress.connect(self.append_to_terminal)
+        self.worker.finished.connect(self.download_thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.download_thread.finished.connect(self.download_thread.deleteLater)
+
+        # Call run function when thread started
+        self.download_thread.started.connect(self.worker.run)
+
         self.download_thread.start()
     
 
-    def fetch_liked_videos(self):
-        if not self.youtube_creds:
-            print("Youtube credentials not set, prompting authorize youtube process:")
-            self.set_youtube_creds()
-        youtube_api.fetch_liked_videos(self.youtube_creds)
-        downloader.download_liked_videos(self)
-    
-
-    def load_existing_directory_path(self):
+    def load_existing_directory_path(self) -> None:
         """
         Loads the existing directory path from the config file and displays it in the input field.
         """
@@ -168,14 +179,17 @@ class DirectoryInputApp(QWidget):
             print(f"Error loading existing directory path: {e}")
 
 
-    def open_directory_dialog(self):
+    def open_directory_dialog(self) -> None:
         # Open a directory dialog and set the selected path to the input line
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             self.input_line.setText(directory)
 
 
-    def save_directory_path(self):
+    def save_directory_path(self) -> None:
+        ''' 
+        Records the directory path selected by the user in directory dialog prompt
+        '''
         self.selected_directory = self.input_line.text()
         if self.selected_directory:
             config = initialize.load_config()
@@ -184,23 +198,28 @@ class DirectoryInputApp(QWidget):
             print(f"Directory path saved: {self.selected_directory}")
         else:
             print("Error saving directory path")
-
-
-    def set_creds(self):
-        self.creds = youtube_api.youtube_authentication()
     
     
-    def cancel_download_liked_videos(self):
-        self.cancel_download = True
-        print("Cancel downloading requested")
+    def cancel_download_liked_videos(self) -> None:
+        if self.worker:
+            self.worker.cancel_download = True
 
-        
-    def set_youtube_creds(self):
+
+    def set_youtube_creds(self) -> None:
         self.youtube_creds = youtube_api.youtube_authentication()
 
         
-    def set_spotify_creds(self):
+    def set_spotify_creds(self) -> None:
         self.spotify_creds = spotify_api.spotify_authentication()
+
+
+    def append_to_terminal(self, message: str):
+        """
+        Append messages to QTextEdit terminal
+        """
+        timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        self.terminal.append(f"{timestamp} {message}")
+        self.terminal.moveCursor(QTextCursor.MoveOperation.End)
 
 
 if __name__ == "__main__":

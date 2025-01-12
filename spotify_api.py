@@ -8,7 +8,7 @@ REDIRECT_URI = "http://localhost:8080/callback"
 
 scope = "user-library-read"
 
-def spotify_authentication():
+def spotify_authentication() -> spotipy.Spotify:
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
@@ -17,7 +17,7 @@ def spotify_authentication():
     ))
     return sp
     
-def get_liked_songs(creds, ):
+def get_liked_songs(creds, ) -> None:
     results = creds.current_user_saved_tracks()
     for idx, item in enumerate(results['items']):
         track = item['track']

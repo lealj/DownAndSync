@@ -13,21 +13,48 @@ def download_liked_videos(app):
             print("Download process canceled.")
             break
         try:
-            file_name = f"{v['title']}"
-            output_path = os.path.join(initialize.get_directory_path(), f"{file_name}.%(ext)s")
+            artist = f"{v['artist']}"
+            song_title = f"{v['song_title']}"
+            file_name = f"{v['song_title']}.%(ext)s"
+
+            parent_directory = initialize.get_directory_path()
+            artist_directory = os.path.join(parent_directory, artist)
+            album_directory = os.path.join(artist_directory, song_title)
+
+            os.makedirs(album_directory, exist_ok=True)
+
+            output_path = os.path.join(album_directory, file_name)
 
             # Check if song already exists in path
-            if any(os.path.exists(os.path.join(initialize.get_directory_path(), f"{file_name}{ext}")) for ext in ['.mp3', '.m4a', '.webm', '.opus']):
+            if any(os.path.exists(os.path.join(album_directory, f"{file_name}{ext}")) for ext in ['.mp3', '.m4a', '.webm', '.opus']):
                 print(f"File for {v['title']} already exists. Skipping download.")
                 continue
-
-            download_video(v['video_id'], output_path, v['title'])
+            
+            print(f"Starting download: {artist} - {song_title}")
+            download_video_with_retries(v['video_id'], output_path, song_title)
             time.sleep(5) 
         except Exception as e:
             pass
     print("Download process complete.")
 
 
+def download_video_with_retries(video_id, output_path, video_title, retries=3, wait=5):
+    for attempt in range (0, retries):
+        try:
+            print(f"Attempt {attempt} to download: {video_title}")
+            download_video(video_id, output_path, video_title)
+            print(f"Successfully downloaded: {video_title}")
+            return
+        except Exception as e:
+            print(f"Error on attempt {attempt} for {video_title}: {e}")
+            if attempt < retries:
+                print(f"Retrying in {wait} seconds...")
+                time.sleep(wait)
+            else:
+                print(f"Failed to download {video_title} after {retries} attempts.")
+
+
+# TODO: Make ffmpeg_location dynamic
 def download_video(video_id, output_path, video_title, format='bestaudio'):
     ydl_opts = {
         'format': 'bestaudio[ext!=webm]/best[ext!=webm]',
@@ -40,6 +67,7 @@ def download_video(video_id, output_path, video_title, format='bestaudio'):
             {'key': 'FFmpegMetadata'},
             {'key': 'EmbedThumbnail'},
         ],
+        'writethumbnail': True,
         'ffmpeg_location': r'C:\Users\lealj\OneDrive\Documents\GitHub\DownAndSync\ffmpeg\bin'
     }
 
@@ -51,7 +79,9 @@ def download_video(video_id, output_path, video_title, format='bestaudio'):
             else:
                 print(f"Issue downloading {video_title}.")
     except Exception as e:
-        print(f"Error downloading video {video_title}: {e}")
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error downloading video {video_title}: {e}\nDetails: {error_details}")
 
 
 def load_liked_videos_from_json(file_path='liked_videos.json'):

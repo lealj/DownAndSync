@@ -52,6 +52,17 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
     """
     Fetches the user's liked videos using the YouTube Data API, continuing to make requests until all liked videos are fetched.
     """
+    def sanitize_start(value):
+        """
+        Santize song title and artist name, so that they don't start with invalid characters.
+        For creating files later without error.
+        """
+        INVALID_CHARS = set('<>:\"/\\|?*.')
+        while value and value[0] in INVALID_CHARS:
+            value = value[1:]
+        return value
+    
+
     try:
         youtube = build('youtube', 'v3', credentials=creds)
         liked_videos = []
@@ -61,9 +72,9 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
             # Make a request to the 'videos' endpoint to fetch liked videos
         request = youtube.videos().list(
             part="snippet,contentDetails",
-            myRating="like",  # Fetch liked videos
-            maxResults=5,     # Maximum results per request
-            pageToken=next_page_token  # Use the next page token if it exists
+            myRating="like",
+            maxResults=5,
+            pageToken=next_page_token
         )
         
         response = request.execute()
@@ -71,12 +82,29 @@ def fetch_liked_videos(creds, output_file='liked_videos.json'):
         # Process the response to extract video details
         for item in response.get('items', []):
             video_id = item['id']
-            title = item['snippet']['title']
-            liked_videos.append({
-                "video_id": video_id,
-                "title": title
-            })
+            video_title = sanitize_start(item['snippet']['title'])
+            
+            # If video is labed Artist - Song 
+            if '-' in video_title:
+                title_parts = video_title.split('-')
+                artist = title_parts[0].strip() # Doesn't need sanitize start, already done ^
+                song_title = sanitize_start(title_parts[1].strip())
+                liked_videos.append({
+                    "video_id": video_id,
+                    "artist": artist,
+                    "song_title": song_title
+                })
+            else:
+                channel_name = item['snippet']['channelTitle']
+                # Remove "- Topic" if present
+                if "- Topic" in channel_name:
+                    channel_name = sanitize_start(channel_name.replace("- Topic", "").strip())
         
+                liked_videos.append({
+                    "video_id": video_id,
+                    "artist": channel_name,
+                    "song_title": video_title
+                })
             # Check if there is a next page to continue fetching
 
         #    next_page_token = response.get('nextPageToken')

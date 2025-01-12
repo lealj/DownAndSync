@@ -10,7 +10,7 @@ from PyQt6.QtGui import QTextCursor
 import initialize
 import threading
 import youtube_api
-from downloader import download_liked_videos
+import downloader
 import spotify_api
 
 ''' Notes:
@@ -22,8 +22,9 @@ class OutputStream:
     """
     Custom stream to redirect stdout to a QTextEdit widget.
     """
-    def __init__(self, text_edit):
+    def __init__(self, text_edit, original_stream):
         self.text_edit = text_edit
+        self.original_stream = original_stream
 
 
     def write(self, message):
@@ -34,6 +35,8 @@ class OutputStream:
             self.text_edit.moveCursor(QTextCursor.MoveOperation.End)
             
             # Also write to the original stream (terminal)
+            if not message.endswith("\n"):
+                message += "\n"
             self.original_stream.write(message)
 
 
@@ -50,11 +53,12 @@ class DirectoryInputApp(QWidget):
         # Create layout
         main_layout = QVBoxLayout()
 
-        # Authentication with youtube
+        # Authentication with Youtube
         youtube_auth_button = QPushButton("Authorize Youtube")
         youtube_auth_button.clicked.connect(self.set_youtube_creds)
         main_layout.addWidget(youtube_auth_button)
 
+        # Authentication with Spotify
         spotify_auth_button = QPushButton("Authorize Spotify")
         spotify_auth_button.clicked.connect(self.set_spotify_creds)
         main_layout.addWidget(spotify_auth_button)
@@ -131,6 +135,24 @@ class DirectoryInputApp(QWidget):
         return layout
     
 
+    def start_downloading_liked_videos(self):
+        if self.download_thread and self.download_thread.is_alive():
+            print("Download process is already running.")
+            return
+        
+        self.cancel_download = False  # Reset the cancellation flag
+        self.download_thread = threading.Thread(target=self.fetch_liked_videos)
+        self.download_thread.start()
+    
+
+    def fetch_liked_videos(self):
+        if not self.youtube_creds:
+            print("Youtube credentials not set, prompting authorize youtube process:")
+            self.set_youtube_creds()
+        youtube_api.fetch_liked_videos(self.youtube_creds)
+        downloader.download_liked_videos(self)
+    
+
     def load_existing_directory_path(self):
         """
         Loads the existing directory path from the config file and displays it in the input field.
@@ -164,26 +186,8 @@ class DirectoryInputApp(QWidget):
             print("Error saving directory path")
 
 
-    def start_downloading_liked_videos(self):
-        if self.download_thread and self.download_thread.is_alive():
-            print("Download process is already running.")
-            return
-        
-        self.cancel_download = False  # Reset the cancellation flag
-        self.download_thread = threading.Thread(target=self.fetch_liked_videos)
-        self.download_thread.start()
-
-
     def set_creds(self):
         self.creds = youtube_api.youtube_authentication()
-
-
-    def fetch_liked_videos(self):
-        if not self.youtube_creds:
-            print("Youtube credentials not set, prompting authorize youtube process:")
-            self.set_youtube_creds()
-        youtube_api.fetch_liked_videos(self.youtube_creds)
-        download_liked_videos(self)
     
     
     def cancel_download_liked_videos(self):

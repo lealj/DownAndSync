@@ -16,7 +16,6 @@ class DownloadWorker(QObject):
         self.app = app
         self.cancel_download = False
 
-
     def run(self):
         videos = self.load_liked_videos_from_json()
 
@@ -38,20 +37,28 @@ class DownloadWorker(QObject):
                 output_path = os.path.join(album_directory, file_name)
 
                 # Check if song already exists in path
-                if any(os.path.exists(os.path.join(album_directory, f"{v['song_title']}{ext}")) for ext in ['.mp3', '.m4a', '.webm', '.opus', '.mp4', '.flac']):
-                    self.progress.emit(f"File for {v['song_title']} already exists. Skipping download.")
+                if any(
+                    os.path.exists(
+                        os.path.join(album_directory, f"{v['song_title']}{ext}")
+                    )
+                    for ext in [".mp3", ".m4a", ".webm", ".opus", ".mp4", ".flac"]
+                ):
+                    self.progress.emit(
+                        f"File for {v['song_title']} already exists. Skipping download."
+                    )
                     continue
-                
+
                 self.progress.emit(f"Starting download: {artist} - {song_title}")
-                self.download_video_with_retries(v['video_id'], output_path, song_title)
-                time.sleep(5) 
+                self.download_video_with_retries(v["video_id"], output_path, song_title)
+                time.sleep(5)
             except Exception as e:
                 pass
         self.progress.emit("Download process complete.")
 
-
-    def download_video_with_retries(self, video_id: str, output_path: str, video_title: str, retries=3, wait=5) -> None:
-        for attempt in range (0, retries):
+    def download_video_with_retries(
+        self, video_id: str, output_path: str, video_title: str, retries=3, wait=5
+    ) -> None:
+        for attempt in range(0, retries):
             try:
                 self.progress.emit(f"Attempt {attempt} to download: {video_title}")
                 self.download_video(video_id, output_path, video_title)
@@ -63,23 +70,26 @@ class DownloadWorker(QObject):
                     self.progress.emit(f"Retrying in {wait} seconds...")
                     time.sleep(wait)
                 else:
-                    self.progress.emit(f"Failed to download {video_title} after {retries} attempts.")
+                    self.progress.emit(
+                        f"Failed to download {video_title} after {retries} attempts."
+                    )
 
-
-    def download_video(self, video_id: str, output_path: str, video_title: str, format='bestaudio') -> None:
+    def download_video(
+        self, video_id: str, output_path: str, video_title: str, format="bestaudio"
+    ) -> None:
         ydl_opts = {
-            'format': 'bestaudio[ext!=webm]/best[ext!=webm]',
-            'outtmpl': output_path,
-            'quiet': True,
-            'noplaylist': False,
-            'extractaudio': True,
-            'reject': ['webm'],
-            'postprocessors': [
-                {'key': 'FFmpegMetadata'},
-                {'key': 'EmbedThumbnail'},
+            "format": "bestaudio[ext!=webm]/best[ext!=webm]",
+            "outtmpl": output_path,
+            "quiet": True,
+            "noplaylist": False,
+            "extractaudio": True,
+            "reject": ["webm"],
+            "postprocessors": [
+                {"key": "FFmpegMetadata"},
+                {"key": "EmbedThumbnail"},
             ],
-            'writethumbnail': True,
-            'ffmpeg_location': r'C:\Users\lealj\OneDrive\Documents\GitHub\DownAndSync\ffmpeg\bin'
+            "writethumbnail": True,
+            "ffmpeg_location": r"C:\Users\lealj\OneDrive\Documents\GitHub\DownAndSync\ffmpeg\bin",
         }
 
         try:
@@ -91,42 +101,53 @@ class DownloadWorker(QObject):
                     self.progress.emit(f"Issue downloading {video_title}.")
         except Exception as e:
             import traceback
+
             error_details = traceback.format_exc()
-            self.progress.emit(f"Error downloading video {video_title}: {e}\nDetails: {error_details}")
+            self.progress.emit(
+                f"Error downloading video {video_title}: {e}\nDetails: {error_details}"
+            )
 
-
-    def load_liked_videos_from_json(self, file_path='liked_videos.json') -> None:
+    def load_liked_videos_from_json(self, file_path="liked_videos.json") -> None:
         """
         Loads the liked videos from a JSON file into a Python data structure (list).
         """
         try:
-            with open(file_path, 'r') as json_file:
+            with open(file_path, "r") as json_file:
                 liked_videos = json.load(json_file)
-            self.progress.emit(f"Loaded {len(liked_videos)} liked videos from {file_path}.")
+            self.progress.emit(
+                f"Loaded {len(liked_videos)} liked videos from {file_path}."
+            )
             return liked_videos
-        
+
         except Exception as e:
             self.progress.emit(f"Error loading liked videos: {e}")
             return []
 
-
     def print_video_download_options(self, video_id: str) -> None:
-        '''
+        """
         Testing - prints download options for the video
-        '''
+        """
         ydl_opts = {
-            'quiet': True,
-            'simulate': True,
-            'format': 'all',
+            "quiet": True,
+            "simulate": True,
+            "format": "all",
         }
 
         try:
             with YoutubeDL(ydl_opts) as ydl:
-                self.progress.emit(f"Available download options for video ID: {video_id}")
-                info_dict = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-                formats = info_dict.get('formats', [])
-                
+                self.progress.emit(
+                    f"Available download options for video ID: {video_id}"
+                )
+                info_dict = ydl.extract_info(
+                    f"https://www.youtube.com/watch?v={video_id}", download=False
+                )
+                formats = info_dict.get("formats", [])
+
                 for f in formats:
-                    self.progress.emit(f"Format ID: {f['format_id']}, Extension: {f['ext']}, Resolution: {f.get('resolution', 'N/A')}, Note: {f.get('format_note', 'N/A')}")
+                    self.progress.emit(
+                        f"Format ID: {f['format_id']}, Extension: {f['ext']}, Resolution: {f.get('resolution', 'N/A')}, Note: {f.get('format_note', 'N/A')}"
+                    )
         except Exception as e:
-            self.progress.emit(f"Error fetching download options for video ID {video_id}: {e}")
+            self.progress.emit(
+                f"Error fetching download options for video ID {video_id}: {e}"
+            )

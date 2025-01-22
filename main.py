@@ -4,28 +4,37 @@ import datetime
 import json
 from PyQt6.QtCore import QSize, Qt, QThread
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QFileDialog, QLabel, QHBoxLayout, QTextEdit
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QFileDialog,
+    QLabel,
+    QHBoxLayout,
+    QTextEdit,
 )
 from PyQt6.QtGui import QTextCursor
 import initialize
-import threading
 import youtube_api
 import downloader
 import spotify_api
 
-''' Notes:
+""" Notes:
 - Ctr + Shft + J to beautify json
 - Figure out what to do about the button / message when a user is already authenticated. Sketchy cuz the token could expire. 
 - Test new authorization
-'''
+"""
+
+
 class OutputStream:
     """
     Custom stream to redirect stdout to a QTextEdit widget.
     """
+
     def __init__(self, text_edit, original_stream):
         self.text_edit = text_edit
         self.original_stream = original_stream
-
 
     def write(self, message: str):
         if message.strip():
@@ -33,12 +42,11 @@ class OutputStream:
             timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
             self.text_edit.append(f"{timestamp} {message.strip()}")
             self.text_edit.moveCursor(QTextCursor.MoveOperation.End)
-            
+
             # Also write to the original stream (terminal)
             if not message.endswith("\n"):
                 message += "\n"
             self.original_stream.write(message)
-
 
     def flush(self):
         self.original_stream.flush()
@@ -46,10 +54,11 @@ class OutputStream:
 
 class DirectoryInputApp(QWidget):
     youtube_creds = None
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("DownAndSync")
-        
+
         # Create layout
         main_layout = QVBoxLayout()
 
@@ -81,10 +90,10 @@ class DirectoryInputApp(QWidget):
         self.setLayout(main_layout)
         self.load_existing_directory_path()
 
-        sys.stdout = OutputStream(self.terminal, sys.__stdout__)
-        sys.stderr = OutputStream(self.terminal, sys.__stderr__)
+        # These lines (or one of them) randomly crash the app, but useful for IDE terminal logs
+        # sys.stdout = OutputStream(self.terminal, sys.__stdout__)
+        # sys.stderr = OutputStream(self.terminal, sys.__stderr__)
 
-    
     def create_directory_input_widget(self) -> QVBoxLayout:
         """
         Creates the label, QLineEdit, and QPushButton for directory input.
@@ -117,7 +126,6 @@ class DirectoryInputApp(QWidget):
         layout.addLayout(input_layout)
 
         return layout
-    
 
     def create_downloading_process_widget(self) -> QHBoxLayout:
         """
@@ -125,7 +133,9 @@ class DirectoryInputApp(QWidget):
         """
         layout = QHBoxLayout()
         download_liked_videos_button = QPushButton("Download all liked videos")
-        download_liked_videos_button.clicked.connect(self.start_downloading_liked_videos)
+        download_liked_videos_button.clicked.connect(
+            self.start_downloading_liked_videos
+        )
         layout.addWidget(download_liked_videos_button)
 
         cancel_button = QPushButton("Cancel")
@@ -133,20 +143,25 @@ class DirectoryInputApp(QWidget):
         layout.addWidget(cancel_button)
 
         return layout
-    
 
     def start_downloading_liked_videos(self) -> None:
         def fetch_liked_videos() -> None:
             if not self.youtube_creds:
-                print("Youtube credentials not set, prompting authorize youtube process:")
+                print(
+                    "Youtube credentials not set, prompting authorize youtube process:"
+                )
                 self.set_youtube_creds()
-            youtube_api.fetch_liked_videos(self.youtube_creds)
+            return youtube_api.fetch_liked_videos(self.youtube_creds)
 
-        fetch_liked_videos()
+        fetch_success = fetch_liked_videos()
+        if not fetch_success:
+            print("Failed to retrieve liked videos.")
+            return
+
         if self.download_thread and self.download_thread.isRunning():
             print("Download process is already running.")
             return
-        
+
         self.worker = downloader.DownloadWorker(self)
         self.download_thread = QThread()
 
@@ -162,7 +177,6 @@ class DirectoryInputApp(QWidget):
         self.download_thread.started.connect(self.worker.run)
 
         self.download_thread.start()
-    
 
     def load_existing_directory_path(self) -> None:
         """
@@ -178,40 +192,34 @@ class DirectoryInputApp(QWidget):
         except Exception as e:
             print(f"Error loading existing directory path: {e}")
 
-
     def open_directory_dialog(self) -> None:
         # Open a directory dialog and set the selected path to the input line
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             self.input_line.setText(directory)
 
-
     def save_directory_path(self) -> None:
-        ''' 
+        """
         Records the directory path selected by the user in directory dialog prompt
-        '''
+        """
         self.selected_directory = self.input_line.text()
         if self.selected_directory:
             config = initialize.load_config()
-            config['directory_path'] = self.selected_directory
+            config["directory_path"] = self.selected_directory
             initialize.save_config(config)
             print(f"Directory path saved: {self.selected_directory}")
         else:
             print("Error saving directory path")
-    
-    
+
     def cancel_download_liked_videos(self) -> None:
         if self.worker:
             self.worker.cancel_download = True
 
-
     def set_youtube_creds(self) -> None:
         self.youtube_creds = youtube_api.youtube_authentication()
 
-        
     def set_spotify_creds(self) -> None:
         self.spotify_creds = spotify_api.spotify_authentication()
-
 
     def append_to_terminal(self, message: str):
         """

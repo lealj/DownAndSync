@@ -1,4 +1,5 @@
 import os
+import re
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -65,6 +66,21 @@ def fetch_liked_videos(creds) -> bool:
             value = value[1:]
         return value
 
+    def regex_cleaners(video_title: str) -> str:
+        # Remove parenthesis substr ie (Official music vid)
+        if "(" in video_title and ")" in video_title:
+            video_title = re.sub(r"\s?\(.*?\)", "", video_title)
+
+        # Remove brackets
+        if "[" in video_title and "]" in video_title:
+            video_title = re.sub(r"\s?\[.*?\]", "", video_title)
+
+        # Remove numbered songs
+        if video_title[0].isdigit() and "." in video_title:
+            video_title = re.sub(r"^\d+\.\s?", "", video_title)
+
+        return video_title
+
     try:
         youtube = build("youtube", "v3", credentials=creds)
         liked_videos = []
@@ -85,6 +101,9 @@ def fetch_liked_videos(creds) -> bool:
         for item in response.get("items", []):
             video_id = item["id"]
             video_title = sanitize_start(item["snippet"]["title"])
+
+            # Clean str with regex
+            video_title = regex_cleaners(video_title)
 
             # If video is labed Artist - Song
             if "-" in video_title:
@@ -115,6 +134,7 @@ def fetch_liked_videos(creds) -> bool:
                         "song_title": video_title,
                     }
                 )
+
             # Check if there is a next page to continue fetching
 
         # next_page_token = response.get("nextPageToken")

@@ -3,3 +3,4 @@ __pycache__
 ffmpeg
 .cache
 das_env
+database.db

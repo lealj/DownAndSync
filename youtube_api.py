@@ -4,6 +4,7 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 import json
+from database import DatabaseManager
 
 # Scopes define the access the app needs.
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
@@ -49,7 +50,7 @@ def youtube_authentication() -> Credentials:
 
 
 # More efficient way to manage liked videos
-def fetch_liked_videos(creds, output_file="liked_videos.json") -> list:
+def fetch_liked_videos(creds) -> bool:
     """
     Fetches the user's liked videos using the YouTube Data API, continuing to make requests until all liked videos are fetched.
     """
@@ -93,7 +94,11 @@ def fetch_liked_videos(creds, output_file="liked_videos.json") -> list:
                 ].strip()  # Doesn't need sanitize start, already done ^
                 song_title = sanitize_start(title_parts[1].strip())
                 liked_videos.append(
-                    {"video_id": video_id, "artist": artist, "song_title": song_title}
+                    {
+                        "video_id": video_id,
+                        "artist": artist,
+                        "song_title": song_title,
+                    }
                 )
             else:
                 channel_name = item["snippet"]["channelTitle"]
@@ -112,19 +117,19 @@ def fetch_liked_videos(creds, output_file="liked_videos.json") -> list:
                 )
             # Check if there is a next page to continue fetching
 
-        #    next_page_token = response.get('nextPageToken')
+        # next_page_token = response.get("nextPageToken")
 
         # If no more pages, break the loop
-        #    if not next_page_token:
-        #        break
-
-        with open(output_file, "w") as json_file:
-            json.dump(liked_videos, json_file, indent=4)
+        # if not next_page_token:
+        #    break
+        db_manager = DatabaseManager("database.db")
+        db_manager.insert_songs(liked_videos)
+        db_manager.close()
 
         print(f"Fetched {len(liked_videos)} liked videos.")
 
-        return liked_videos
+        return True
 
     except Exception as e:
         print(f"Error fetching liked videos: {e}")
-        return []
+        return False

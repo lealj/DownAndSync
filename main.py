@@ -90,6 +90,7 @@ class DirectoryInputApp(QWidget):
         self.setLayout(main_layout)
         self.load_existing_directory_path()
 
+        # These lines (or one of them) randomly crash the app, but useful for IDE terminal logs
         # sys.stdout = OutputStream(self.terminal, sys.__stdout__)
         # sys.stderr = OutputStream(self.terminal, sys.__stderr__)
 
@@ -150,9 +151,13 @@ class DirectoryInputApp(QWidget):
                     "Youtube credentials not set, prompting authorize youtube process:"
                 )
                 self.set_youtube_creds()
-            youtube_api.fetch_liked_videos(self.youtube_creds)
+            return youtube_api.fetch_liked_videos(self.youtube_creds)
 
-        fetch_liked_videos()
+        fetch_success = fetch_liked_videos()
+        if not fetch_success:
+            print("Failed to retrieve liked videos.")
+            return
+
         if self.download_thread and self.download_thread.isRunning():
             print("Download process is already running.")
             return

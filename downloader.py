@@ -1,10 +1,9 @@
 import os
-import tempfile
 from yt_dlp import YoutubeDL
-import json
 import initialize
 import time
 from PyQt6.QtCore import QObject, pyqtSignal
+from database import DatabaseManager
 
 
 class DownloadWorker(QObject):
@@ -17,7 +16,9 @@ class DownloadWorker(QObject):
         self.cancel_download = False
 
     def run(self):
-        videos = self.load_liked_videos_from_json()
+        db_manager = DatabaseManager("database.db")
+        videos = db_manager.fetch_songs()
+        db_manager.close()
 
         for v in videos:
             if self.cancel_download:
@@ -106,22 +107,6 @@ class DownloadWorker(QObject):
             self.progress.emit(
                 f"Error downloading video {video_title}: {e}\nDetails: {error_details}"
             )
-
-    def load_liked_videos_from_json(self, file_path="liked_videos.json") -> None:
-        """
-        Loads the liked videos from a JSON file into a Python data structure (list).
-        """
-        try:
-            with open(file_path, "r") as json_file:
-                liked_videos = json.load(json_file)
-            self.progress.emit(
-                f"Loaded {len(liked_videos)} liked videos from {file_path}."
-            )
-            return liked_videos
-
-        except Exception as e:
-            self.progress.emit(f"Error loading liked videos: {e}")
-            return []
 
     def print_video_download_options(self, video_id: str) -> None:
         """

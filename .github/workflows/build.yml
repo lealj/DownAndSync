@@ -21,7 +21,13 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pyinstaller --onefile --windowed main.py
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build Executable
+        run: |
+          pyinstaller --onefile --windoed main.py
         shell: cmd
 
       - name: Upload Build Artifact

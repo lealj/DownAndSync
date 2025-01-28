@@ -34,5 +34,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: DownAndSync
-          path: dist/downandsync.exe
+          path: dist/main.exe
     

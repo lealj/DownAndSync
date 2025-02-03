@@ -51,7 +51,7 @@ def youtube_authentication() -> Credentials:
 
 
 # More efficient way to manage liked videos
-def fetch_liked_videos(creds) -> bool:
+def fetch_liked_videos(creds, maxResults=5) -> list:
     """
     Fetches the user's liked videos using the YouTube Data API, continuing to make requests until all liked videos are fetched.
     """
@@ -91,7 +91,7 @@ def fetch_liked_videos(creds) -> bool:
         request = youtube.videos().list(
             part="snippet,contentDetails",
             myRating="like",
-            maxResults=5,
+            maxResults=maxResults,
             pageToken=next_page_token,
         )
 
@@ -142,14 +142,21 @@ def fetch_liked_videos(creds) -> bool:
         # If no more pages, break the loop
         # if not next_page_token:
         #    break
-        db_manager = DatabaseManager("database.db")
-        db_manager.insert_songs(liked_videos)
-        db_manager.close()
 
         print(f"Fetched {len(liked_videos)} liked videos.")
 
-        return True
+        return liked_videos
 
     except Exception as e:
         print(f"Error fetching liked videos: {e}")
+        return False
+
+
+def insert_liked_videos(liked_videos: list):
+    try:
+        db_manager = DatabaseManager("database.db")
+        db_manager.insert_songs(liked_videos)
+        db_manager.close()
+    except Exception as e:
+        print(f"Error inserting liked videos: {e}")
         return False

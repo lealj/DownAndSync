@@ -19,6 +19,8 @@ class DownloadWorker(QObject):
         db_manager = DatabaseManager("database.db")
         videos = db_manager.fetch_songs()
         db_manager.close()
+        # We download everything in the database table. We only store x latest
+        # in the database per run.
 
         for v in videos:
             if self.cancel_download:
@@ -27,15 +29,10 @@ class DownloadWorker(QObject):
             try:
                 artist = f"{v['artist']}"
                 song_title = f"{v['song_title']}"
-                file_name = f"{v['song_title']}.%(ext)s"
-
-                parent_directory = initialize.get_directory_path()
-                artist_directory = os.path.join(parent_directory, artist)
-                album_directory = os.path.join(artist_directory, song_title)
+                output_path = self.get_output_path(artist, song_title)
+                album_directory = os.path.dirname(output_path)
 
                 os.makedirs(album_directory, exist_ok=True)
-
-                output_path = os.path.join(album_directory, file_name)
 
                 # Check if song already exists in path
                 if any(
@@ -55,6 +52,14 @@ class DownloadWorker(QObject):
             except Exception as e:
                 pass
         self.progress.emit("Download process complete.")
+
+    def get_output_path(self, artist: str, song_title: str) -> str:
+        parent_directory = initialize.get_directory_path()
+        artist_directory = os.path.join(parent_directory, artist)
+        album_directory = os.path.join(artist_directory, song_title)
+        file_name = f"{song_title}.%(ext)s"
+        output_path = os.path.join(album_directory, file_name)
+        return output_path
 
     def download_video_with_retries(
         self, video_id: str, output_path: str, video_title: str, retries=3, wait=5

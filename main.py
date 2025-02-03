@@ -19,6 +19,7 @@ import initialize
 import youtube_api
 import downloader
 import spotify_api
+from syncer import SyncWorker
 
 """ Notes:
 - Ctr + Shft + J to beautify json
@@ -77,8 +78,12 @@ class DirectoryInputApp(QWidget):
         # Thread vars
         self.download_thread = None
         self.worker = False
+        self.sync_worker = None
+        self.sync_thread = None
+        self.sync_running = False
 
         main_layout.addLayout(self.create_downloading_process_widget())
+        main_layout.addLayout(self.create_syncer_test_widget())
 
         # Terminal
         self.terminal = QTextEdit()
@@ -127,6 +132,36 @@ class DirectoryInputApp(QWidget):
 
         return layout
 
+    def create_syncer_test_widget(self) -> QVBoxLayout:
+        layout = QVBoxLayout()
+        start_sync_button = QPushButton("Start Sync")
+        start_sync_button.clicked.connect(self.start_sync_test)
+        layout.addWidget(start_sync_button)
+
+        cancel_button = QPushButton("Stop Sync")
+        cancel_button.clicked.connect(self.stop_sync_test)
+        layout.addWidget(cancel_button)
+
+        return layout
+
+    def start_sync_test(self):
+        self.sync_thread = QThread()
+        self.sync_worker = SyncWorker()
+        self.sync_worker.moveToThread(self.sync_thread)
+
+        self.sync_worker.new_like_signal.connect(self.append_to_terminal)
+        self.sync_thread.started.connect(self.sync_worker.check_liked_videos)
+
+        self.sync_thread.start()
+        self.sync_running = True
+
+    def stop_sync_test(self):
+        if self.sync_worker:
+            self.sync_worker.stop()
+            self.sync_thread.quit()
+            self.sync_thread.wait()
+        self.sync_running = False
+
     def create_downloading_process_widget(self) -> QHBoxLayout:
         """
         Creates the download and cancel button, returns a layout.
@@ -151,10 +186,12 @@ class DirectoryInputApp(QWidget):
                     "Youtube credentials not set, prompting authorize youtube process:"
                 )
                 self.set_youtube_creds()
-            return youtube_api.fetch_liked_videos(self.youtube_creds)
+            # Change number upon prod.
+            return youtube_api.fetch_liked_videos(self.youtube_creds, 5)
 
-        fetch_success = fetch_liked_videos()
-        if not fetch_success:
+        liked_videos = fetch_liked_videos()
+        youtube_api.insert_liked_videos(liked_videos)
+        if liked_videos is None:
             print("Failed to retrieve liked videos.")
             return
 

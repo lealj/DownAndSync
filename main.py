@@ -20,6 +20,7 @@ import youtube_api
 import downloader
 import spotify_api
 from syncer import SyncWorker
+from widgets import main_widgets
 
 """ Notes:
 - Ctr + Shft + J to beautify json
@@ -59,21 +60,30 @@ class DirectoryInputApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("DownAndSync")
+        self.input_line = None
 
         # Create layout
         main_layout = QVBoxLayout()
 
         # Authentication with Youtube
-        youtube_auth_button = QPushButton("Authorize Youtube")
-        youtube_auth_button.clicked.connect(self.set_youtube_creds)
-        main_layout.addWidget(youtube_auth_button)
+        main_layout.addWidget(
+            main_widgets.create_singleton_button(
+                "Authorize Youtube", self.set_youtube_creds
+            )
+        )
 
         # Authentication with Spotify
-        spotify_auth_button = QPushButton("Authorize Spotify")
-        spotify_auth_button.clicked.connect(self.set_spotify_creds)
-        main_layout.addWidget(spotify_auth_button)
+        main_layout.addWidget(
+            main_widgets.create_singleton_button(
+                "Authorize Spotify", self.set_spotify_creds
+            )
+        )
 
-        main_layout.addLayout(self.create_directory_input_widget())
+        # Add directory input widget
+        dir_input_widget, self.input_line = main_widgets.create_directory_input_widget(
+            self.open_directory_dialog, self.save_directory_path
+        )
+        main_layout.addLayout(dir_input_widget)
 
         # Thread vars
         self.download_thread = None
@@ -82,14 +92,22 @@ class DirectoryInputApp(QWidget):
         self.sync_thread = None
         self.sync_running = False
 
-        main_layout.addLayout(self.create_downloading_process_widget())
-        main_layout.addLayout(self.create_syncer_test_widget())
+        # Add bulk download widgets
+        main_layout.addLayout(
+            main_widgets.create_downloading_process_widget(
+                self.start_downloading_liked_videos, self.cancel_download_liked_videos
+            )
+        )
 
-        # Terminal
-        self.terminal = QTextEdit()
-        self.terminal.setReadOnly(True)
-        self.terminal.setFixedHeight(200)
-        main_layout.addWidget(self.terminal)
+        # Add test sync widget
+        main_layout.addLayout(
+            main_widgets.create_syncer_test_widget(
+                self.start_sync_test, self.stop_sync_test
+            )
+        )
+
+        # Add terminal widget
+        main_layout.addWidget(main_widgets.create_terminal_widget())
 
         self.setMinimumSize(QSize(600, 400))
         self.setLayout(main_layout)
@@ -98,51 +116,6 @@ class DirectoryInputApp(QWidget):
         # These lines (or one of them) randomly crash the app, but useful for IDE terminal logs
         # sys.stdout = OutputStream(self.terminal, sys.__stdout__)
         # sys.stderr = OutputStream(self.terminal, sys.__stderr__)
-
-    def create_directory_input_widget(self) -> QVBoxLayout:
-        """
-        Creates the label, QLineEdit, and QPushButton for directory input.
-        Returns the layout containing these widgets.
-        """
-        # Vertical layout for label and input
-        layout = QVBoxLayout()
-
-        # Label to show instructions
-        label = QLabel("Enter the directory path used by your plex server:")
-        layout.addWidget(label)
-
-        # Horizontal layout for input line and button
-        input_layout = QHBoxLayout()
-        self.input_line = QLineEdit()
-        self.input_line.setFixedWidth(300)  # Set a fixed width for the input line
-        input_layout.addWidget(self.input_line)
-
-        browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(self.open_directory_dialog)
-        browse_button.setMaximumWidth(100)
-        input_layout.addWidget(browse_button)
-
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.save_directory_path)
-        save_button.setMaximumWidth(100)
-        input_layout.addWidget(save_button)
-
-        # Add the horizontal layout to the vertical layout
-        layout.addLayout(input_layout)
-
-        return layout
-
-    def create_syncer_test_widget(self) -> QVBoxLayout:
-        layout = QVBoxLayout()
-        start_sync_button = QPushButton("Start Sync")
-        start_sync_button.clicked.connect(self.start_sync_test)
-        layout.addWidget(start_sync_button)
-
-        cancel_button = QPushButton("Stop Sync")
-        cancel_button.clicked.connect(self.stop_sync_test)
-        layout.addWidget(cancel_button)
-
-        return layout
 
     def start_sync_test(self):
         self.sync_thread = QThread()
@@ -162,24 +135,12 @@ class DirectoryInputApp(QWidget):
             self.sync_thread.wait()
         self.sync_running = False
 
-    def create_downloading_process_widget(self) -> QHBoxLayout:
-        """
-        Creates the download and cancel button, returns a layout.
-        """
-        layout = QHBoxLayout()
-        download_liked_videos_button = QPushButton("Download all liked videos")
-        download_liked_videos_button.clicked.connect(
-            self.start_downloading_liked_videos
-        )
-        layout.addWidget(download_liked_videos_button)
-
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.cancel_download_liked_videos)
-        layout.addWidget(cancel_button)
-
-        return layout
-
     def start_downloading_liked_videos(self) -> None:
+        """
+        Initiates the process of downloading liked YouTube videos.
+        Creates worker and thread for download process.
+        """
+
         def fetch_liked_videos() -> None:
             if not self.youtube_creds:
                 print(
@@ -230,7 +191,9 @@ class DirectoryInputApp(QWidget):
             print(f"Error loading existing directory path: {e}")
 
     def open_directory_dialog(self) -> None:
-        # Open a directory dialog and set the selected path to the input line
+        """
+        Open a directory dialog and set the selected path to the input line
+        """
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             self.input_line.setText(directory)

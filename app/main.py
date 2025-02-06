@@ -13,6 +13,9 @@ from PyQt6.QtWidgets import (
     QLabel,
     QHBoxLayout,
     QTextEdit,
+    QMainWindow,
+    QMessageBox,
+    QSystemTrayIcon,
 )
 from PyQt6.QtGui import QTextCursor
 import initialize
@@ -54,7 +57,7 @@ class OutputStream:
         self.original_stream.flush()
 
 
-class DirectoryInputApp(QWidget):
+class DownAndSync(QMainWindow):
     youtube_creds = None
 
     def __init__(self):
@@ -63,7 +66,10 @@ class DirectoryInputApp(QWidget):
         self.input_line = None
 
         # Create layout
+        central_widget = QWidget(self)  # Central widget
+        self.setCentralWidget(central_widget)  # Set it as the main widget
         main_layout = QVBoxLayout()
+        central_widget.setLayout(main_layout)
 
         # Authentication with Youtube
         main_layout.addWidget(
@@ -110,12 +116,41 @@ class DirectoryInputApp(QWidget):
         main_layout.addWidget(main_widgets.create_terminal_widget())
 
         self.setMinimumSize(QSize(600, 400))
-        self.setLayout(main_layout)
         self.load_existing_directory_path()
 
         # These lines (or one of them) randomly crash the app, but useful for IDE terminal logs
         # sys.stdout = OutputStream(self.terminal, sys.__stdout__)
         # sys.stderr = OutputStream(self.terminal, sys.__stderr__)
+
+    def closeEvent(self, event):
+        event.ignore()
+        self.hide()
+        self.tray_icon.showMessage(
+            "DownAndSync",
+            "Minimized to system tray",
+            QSystemTrayIcon.MessageIcon.Information,
+        )
+
+    def showWindow(self):
+        self.showNormal()
+        self.activateWindow()
+
+    def quit_app(self):
+        self.tray_icon.hide()
+        QApplication.quit()
+
+    def on_tray_icon_clicked(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.show_window()
+
+    def on_window_close(self):
+        """Custom function triggered on window close."""
+        print("Window is closing. Performing cleanup...")
+        if self.download_thread and self.download_thread.isRunning():
+            self.download_thread.quit()
+        if self.sync_thread and self.sync_thread.isRunning():
+            self.sync_thread.quit()
+        self.showMinimized()
 
     def start_sync_test(self):
         self.sync_thread = QThread()
@@ -233,6 +268,6 @@ class DirectoryInputApp(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     initialize.initialize_config()
-    window = DirectoryInputApp()
+    window = DownAndSync()
     window.show()
     sys.exit(app.exec())

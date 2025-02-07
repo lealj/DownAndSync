@@ -1,6 +1,6 @@
 from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 import youtube_api
-from database import DatabaseManager
+from app.core.database import DatabaseManager
 import downloader
 
 

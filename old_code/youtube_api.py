@@ -5,7 +5,7 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 import json
-from database import DatabaseManager
+from app.core.database import DatabaseManager
 
 # Scopes define the access the app needs.
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]

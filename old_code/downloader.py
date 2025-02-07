@@ -3,7 +3,7 @@ from yt_dlp import YoutubeDL
 import initialize
 import time
 from PyQt6.QtCore import QObject, pyqtSignal
-from database import DatabaseManager
+from app.core.database import DatabaseManager
 
 
 class DownloadWorker(QObject):

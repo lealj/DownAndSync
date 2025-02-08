@@ -1,11 +1,8 @@
 import os
-import re
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
-import json
-from database import DatabaseManager
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 

@@ -20,7 +20,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QTextCursor
 import initialize
 import youtube_api
-import downloader
 import spotify_api
 from syncer import SyncWorker
 from app.gui import main_widgets
@@ -224,9 +223,9 @@ class DownAndSync(QMainWindow):
     #     else:
     #         print("Error saving directory path")
 
-    def cancel_download_liked_videos(self) -> None:
-        if self.worker:
-            self.worker.cancel_download = True
+    # def cancel_download_liked_videos(self) -> None:
+    #     if self.worker:
+    #         self.worker.cancel_download = True
 
     def set_youtube_creds(self) -> None:
         self.youtube_creds = youtube_api.youtube_authentication()

@@ -2,7 +2,7 @@ import datetime
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QFileDialog
 from PyQt6.QtCore import QSize, QThread
 from PyQt6.QtGui import QTextCursor, QIcon
-from PyQt6.QtWidgets import QLineEdit
+from PyQt6.QtWidgets import QLineEdit, QSystemTrayIcon
 
 # from app.gui.tray_icon import SystemTray
 from app.gui.widgets import (
@@ -16,6 +16,7 @@ from app.core.api_auth import YoutubeAuth, SpotifyAuth
 from app.threads.download_worker import DownloadWorker
 from app.threads.sync_worker import SyncWorker
 from app.core.config import load_config, save_config
+from .tray_icon import SystemTray
 import os
 
 
@@ -38,8 +39,20 @@ class DownAndSync(QMainWindow):
         self.sync_running = False
         self.terminal = None
 
-        # self.tray_icon = SystemTray(self)
+        self.tray_icon = SystemTray(self)
         self.setup_ui()
+
+    def closeEvent(self, event):
+        event.ignore()
+        if self.download_thread and self.download_thread.isRunning():
+            self.download_thread.exit()
+            self.download_thread.wait()
+        self.hide()
+        self.tray_icon.showMessage(
+            "DownAndSync",
+            "Minimized to system tray",
+            QSystemTrayIcon.MessageIcon.Information,
+        )
 
     def setup_ui(self):
         """Set up main window UI components"""
@@ -96,10 +109,11 @@ class DownAndSync(QMainWindow):
         self.download_worker = DownloadWorker(self)
         self.download_thread = QThread()
         self.download_worker.moveToThread(self.download_thread)
+        self.download_thread.started.connect(self.download_worker.run)
         self.download_worker.progress.connect(self.append_to_terminal)
         self.download_worker.finished.connect(self.download_thread.quit)
         self.download_worker.finished.connect(self.download_worker.deleteLater)
-        self.download_thread.started.connect(self.download_worker.run)
+        self.download_thread.finished.connect(self.download_thread.deleteLater)
 
     def download_thread_start(self):
         self.download_thread.start()
@@ -108,7 +122,6 @@ class DownAndSync(QMainWindow):
         if self.download_worker:
             self.download_worker.cancel_download = True
 
-    # This probably doesn't go here.
     def append_to_terminal(self, message: str):
         timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
         self.terminal.append(f"{timestamp} {message}")

@@ -110,9 +110,9 @@ class DownAndSync(QMainWindow):
         self.showNormal()
         self.activateWindow()
 
-    def quit_app(self):
-        self.tray_icon.hide()
-        QApplication.quit()
+    # def quit_app(self):
+    #     self.tray_icon.hide()
+    #     QApplication.quit()
 
     def on_tray_icon_clicked(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:

@@ -112,3 +112,7 @@ class DownloadWorker(QObject):
         file_name = f"{song_title}.%(ext)s"
         output_path = os.path.join(album_directory, file_name)
         return output_path
+
+    def stop(self):
+        self.cancel_download = True
+        self.quit()

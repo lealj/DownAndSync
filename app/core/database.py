@@ -43,11 +43,32 @@ class DatabaseManager:
             print("Error:", e)  # Handle other exceptions
             self.connection.rollback()
 
+    def insert_song(self, v):
+        try:
+            data = (v["video_id"], v["artist"], v["song_title"])
+            self.cursor.execute(
+                "INSERT OR IGNORE INTO songs (video_id, artist, song_title) VALUES (?, ?, ?)",
+                data,
+            )
+            self.connection.commit()
+        except sqlite3.IntegrityError as e:
+            self.connection.rollback()
+        except Exception as e:
+            print("Error:", e)  # Handle other exceptions
+            self.connection.rollback()
+
     def fetch_songs(self) -> list:
         """Fetch all users."""
         self.cursor.execute("SELECT * FROM songs")
         rows = self.cursor.fetchall()
         return [dict(row) for row in rows]
+
+    def exists(self, key: str) -> bool:
+        self.cursor.execute(
+            "SELECT EXISTS(SELECT 1 FROM songs WHERE video_id= ?)", (key,)
+        )
+        exists = self.cursor.fetchone()[0]
+        return bool(exists)
 
     def close(self):
         """Close the database connection."""

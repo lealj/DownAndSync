@@ -1,24 +1,26 @@
-import os
-from yt_dlp import YoutubeDL
-import initialize
-import time
 from PyQt6.QtCore import QObject, pyqtSignal
-from database import DatabaseManager
+from app.core.database import DatabaseManager
+import os
+import time
+from app.core.config import get_directory_path
+from yt_dlp import YoutubeDL
 
 
 class DownloadWorker(QObject):
     progress = pyqtSignal(str)
     finished = pyqtSignal()
+    started = pyqtSignal()
 
-    def __init__(self, app):
+    def __init__(self, parent=None):
         super().__init__()
-        self.app = app
         self.cancel_download = False
+        self.db_manager = None
+        self.directory_path = get_directory_path()
 
     def run(self):
-        db_manager = DatabaseManager("database.db")
-        videos = db_manager.fetch_songs()
-        db_manager.close()
+        self.db_manager = DatabaseManager("database.db")
+        videos = self.db_manager.fetch_songs()
+        self.db_manager.close()
 
         for v in videos:
             if self.cancel_download:
@@ -27,15 +29,10 @@ class DownloadWorker(QObject):
             try:
                 artist = f"{v['artist']}"
                 song_title = f"{v['song_title']}"
-                file_name = f"{v['song_title']}.%(ext)s"
-
-                parent_directory = initialize.get_directory_path()
-                artist_directory = os.path.join(parent_directory, artist)
-                album_directory = os.path.join(artist_directory, song_title)
+                output_path = self.get_output_path(artist, song_title)
+                album_directory = os.path.dirname(output_path)
 
                 os.makedirs(album_directory, exist_ok=True)
-
-                output_path = os.path.join(album_directory, file_name)
 
                 # Check if song already exists in path
                 if any(
@@ -108,31 +105,14 @@ class DownloadWorker(QObject):
                 f"Error downloading video {video_title}: {e}\nDetails: {error_details}"
             )
 
-    def print_video_download_options(self, video_id: str) -> None:
-        """
-        Testing - prints download options for the video
-        """
-        ydl_opts = {
-            "quiet": True,
-            "simulate": True,
-            "format": "all",
-        }
+    def get_output_path(self, artist: str, song_title: str) -> str:
+        parent_directory = self.directory_path
+        artist_directory = os.path.join(parent_directory, artist)
+        album_directory = os.path.join(artist_directory, song_title)
+        file_name = f"{song_title}.%(ext)s"
+        output_path = os.path.join(album_directory, file_name)
+        return output_path
 
-        try:
-            with YoutubeDL(ydl_opts) as ydl:
-                self.progress.emit(
-                    f"Available download options for video ID: {video_id}"
-                )
-                info_dict = ydl.extract_info(
-                    f"https://www.youtube.com/watch?v={video_id}", download=False
-                )
-                formats = info_dict.get("formats", [])
-
-                for f in formats:
-                    self.progress.emit(
-                        f"Format ID: {f['format_id']}, Extension: {f['ext']}, Resolution: {f.get('resolution', 'N/A')}, Note: {f.get('format_note', 'N/A')}"
-                    )
-        except Exception as e:
-            self.progress.emit(
-                f"Error fetching download options for video ID {video_id}: {e}"
-            )
+    def stop(self):
+        self.cancel_download = True
+        self.quit()

@@ -4,3 +4,6 @@ ffmpeg
 .cache
 das_env
 database.db
+build/
+dist/
+*.spec

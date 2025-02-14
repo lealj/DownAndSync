@@ -1,7 +1,9 @@
 import sys
 from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QIcon
 from app.gui.main_window import DownAndSync
 import app.core.config as config
+import os
 
 """
 GUI Components (ui/): Contains UI-related code, such as QMainWindow-derived classes.
@@ -14,6 +16,9 @@ Main Entry Point (main.py): Initializes the application and loads the main windo
 
 def main():
     my_app = QApplication(sys.argv)
+    icon_path = os.path.join(os.path.dirname(__file__), "assets", "icon.ico")
+    icon = QIcon(icon_path)
+    my_app.setWindowIcon(icon)
     config.initialize_config()
     window = DownAndSync()
     window.show()

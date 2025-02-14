@@ -1,6 +1,4 @@
 from .api_auth import YoutubeAuth
-from PyQt6.QtCore import QThread
-from app.threads.download_worker import DownloadWorker
 from googleapiclient.discovery import build
 from .database import DatabaseManager
 from app.utils.utility import regex_cleaners, sanitize_start

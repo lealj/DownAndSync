@@ -2,7 +2,6 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from app.gui.main_window import DownAndSync
 import app.core.config as config
-import os
 
 """
 GUI Components (ui/): Contains UI-related code, such as QMainWindow-derived classes.

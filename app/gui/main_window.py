@@ -1,8 +1,8 @@
 import datetime
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QFileDialog
 from PyQt6.QtCore import QSize, QThread
-from PyQt6.QtGui import QTextCursor, QIcon
-from PyQt6.QtWidgets import QLineEdit, QSystemTrayIcon
+from PyQt6.QtGui import QTextCursor
+from PyQt6.QtWidgets import QSystemTrayIcon
 
 # from app.gui.tray_icon import SystemTray
 from app.gui.widgets import (
@@ -11,13 +11,13 @@ from app.gui.widgets import (
     create_terminal_widget,
     create_downloading_process_layout,
     input_line_init,
+    create_syncer_test_layout,
 )
 from app.core.api_auth import YoutubeAuth, SpotifyAuth
 from app.threads.download_worker import DownloadWorker
 from app.threads.sync_worker import SyncWorker
 from app.core.config import load_config, save_config
 from .tray_icon import SystemTray
-import os
 
 
 class DownAndSync(QMainWindow):
@@ -35,7 +35,6 @@ class DownAndSync(QMainWindow):
         self.sync_thread = None
         self.sync_worker = None
 
-        # idk
         self.sync_running = False
         self.terminal = None
 
@@ -61,6 +60,7 @@ class DownAndSync(QMainWindow):
         main_layout = QVBoxLayout()
         central_widget.setLayout(main_layout)
 
+        # Auth buttons
         main_layout.addWidget(
             create_singleton_button("Authorize Youtube", self.set_youtube_creds)
         )
@@ -68,12 +68,14 @@ class DownAndSync(QMainWindow):
             create_singleton_button("Authorize Spotify", self.set_spotify_creds)
         )
 
+        # Directory input
         self.input_line = input_line_init()
         dir_input_widget = create_directory_input_layout(
             self.open_directory_dialog, self.save_directory_path, self.input_line
         )
         main_layout.addLayout(dir_input_widget)
 
+        # Bulk download thread
         download_process_layout = create_downloading_process_layout(
             self.download_thread_setup,
             self.download_thread_start,
@@ -81,6 +83,13 @@ class DownAndSync(QMainWindow):
         )
         main_layout.addLayout(download_process_layout)
 
+        # Sync thread
+        sync_test_layout = create_syncer_test_layout(
+            self.sync_thread_setup, self.stop_sync_test
+        )
+        main_layout.addLayout(sync_test_layout)
+
+        # Terminal
         self.terminal = create_terminal_widget()
         main_layout.addWidget(self.terminal)
 
@@ -121,6 +130,24 @@ class DownAndSync(QMainWindow):
     def cancel_download_liked_videos(self) -> None:
         if self.download_worker:
             self.download_worker.cancel_download = True
+
+    def sync_thread_setup(self):
+        self.sync_thread = QThread()
+        self.sync_worker = SyncWorker()
+        self.sync_worker.moveToThread(self.sync_thread)
+
+        self.sync_worker.new_like_signal.connect(self.append_to_terminal)
+        self.sync_thread.started.connect(self.sync_worker.check_liked_videos)
+
+        self.sync_thread.start()
+        self.sync_running = True
+
+    def stop_sync_test(self):
+        if self.sync_worker:
+            self.sync_worker.stop()
+            self.sync_thread.quit()
+            self.sync_thread.wait()
+        self.sync_running = False
 
     def append_to_terminal(self, message: str):
         timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")

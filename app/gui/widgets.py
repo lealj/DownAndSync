@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QTextEdit,
 )
 from app.core.youtube_service import setup_liked_videos
-from app.core.config import save_directory_path, get_directory_path
+from app.core.config import get_directory_path
 
 
 def input_line_init() -> QLineEdit:

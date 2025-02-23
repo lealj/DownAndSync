@@ -10,7 +10,7 @@ def setup_liked_videos():
     insert_liked_videos(liked_videos)
 
 
-def fetch_liked_videos(creds, maxResults=5) -> list:
+def fetch_liked_videos(creds, maxResults=50) -> list:
     """
     Fetches the user's liked videos using the YouTube Data API, continuing to make requests until all liked videos are fetched.
     """
@@ -19,62 +19,61 @@ def fetch_liked_videos(creds, maxResults=5) -> list:
         liked_videos = []
         next_page_token = None  # Start without a page token
 
-        # while True:
-        # Make a request to the 'videos' endpoint to fetch liked videos
-        request = youtube.videos().list(
-            part="snippet,contentDetails",
-            myRating="like",
-            maxResults=maxResults,
-            pageToken=next_page_token,
-        )
+        while True:
+            # Make a request to the 'videos' endpoint to fetch liked videos
+            request = youtube.videos().list(
+                part="snippet,contentDetails",
+                myRating="like",
+                maxResults=maxResults,
+                pageToken=next_page_token,
+            )
 
-        response = request.execute()
+            response = request.execute()
 
-        # Process the response to extract video details
-        for item in response.get("items", []):
-            video_id = item["id"]
-            video_title = sanitize_start(item["snippet"]["title"])
+            # Process the response to extract video details
+            for item in response.get("items", []):
+                video_id = item["id"]
+                video_title = sanitize_start(item["snippet"]["title"])
 
-            # Clean str with regex
-            video_title = regex_cleaners(video_title)
+                # Clean str with regex
+                video_title = regex_cleaners(video_title)
 
-            # If video is labed Artist - Song
-            if "-" in video_title:
-                title_parts = video_title.split("-")
-                artist = title_parts[
-                    0
-                ].strip()  # Doesn't need sanitize start, already done ^
-                song_title = sanitize_start(title_parts[1].strip())
-                liked_videos.append(
-                    {
-                        "video_id": video_id,
-                        "artist": artist,
-                        "song_title": song_title,
-                    }
-                )
-            else:
-                channel_name = item["snippet"]["channelTitle"]
-                # Remove "- Topic" if present
-                if "- Topic" in channel_name:
-                    channel_name = sanitize_start(
-                        channel_name.replace("- Topic", "").strip()
+                # If video is labed Artist - Song
+                if "-" in video_title:
+                    title_parts = video_title.split("-")
+                    artist = title_parts[
+                        0
+                    ].strip()  # Doesn't need sanitize start, already done ^
+                    song_title = sanitize_start(title_parts[1].strip())
+                    liked_videos.append(
+                        {
+                            "video_id": video_id,
+                            "artist": artist,
+                            "song_title": song_title,
+                        }
+                    )
+                else:
+                    channel_name = item["snippet"]["channelTitle"]
+                    # Remove "- Topic" if present
+                    if "- Topic" in channel_name:
+                        channel_name = sanitize_start(
+                            channel_name.replace("- Topic", "").strip()
+                        )
+
+                    liked_videos.append(
+                        {
+                            "video_id": video_id,
+                            "artist": channel_name,
+                            "song_title": video_title,
+                        }
                     )
 
-                liked_videos.append(
-                    {
-                        "video_id": video_id,
-                        "artist": channel_name,
-                        "song_title": video_title,
-                    }
-                )
-
             # Check if there is a next page to continue fetching
+            next_page_token = response.get("nextPageToken")
 
-        # next_page_token = response.get("nextPageToken")
-
-        # If no more pages, break the loop
-        # if not next_page_token:
-        #    break
+            # If no more pages, break the loop
+            if not next_page_token:
+                break
 
         print(f"Fetched {len(liked_videos)} liked videos.")
 

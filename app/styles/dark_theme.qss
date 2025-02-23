@@ -1,0 +1,39 @@
+QMainWindow {
+    background-color: #363636;
+    color: #EAEAEA;
+}
+
+QPushButton#default_btn {
+    background-color: #c20000;
+    color: #EAEAEA;
+    border-radius: 5px;
+    padding: 8px;
+}
+
+QPushButton#default_btn:hover {
+    background-color: #790000;
+}
+
+QPushButton#window_btn, QPushButton#close_btn {
+    background-color: #00000000;
+    color:rgb(0, 0, 0);
+    border-radius: 0px;
+    padding: 8px;
+}
+
+QPushButton#window_btn:hover {
+    background-color: #505050;
+}
+
+QPushButton#close_btn:hover {
+    background-color: #bd0000;
+}
+
+QTextEdit {
+    background-color: #363636;
+    color: #EAEAEA;
+}
+
+QLabel {
+    color: #EAEAEA;
+}

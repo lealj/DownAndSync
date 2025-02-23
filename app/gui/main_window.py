@@ -1,10 +1,8 @@
 import datetime
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QFileDialog
-from PyQt6.QtCore import QSize, QThread
+from PyQt6.QtCore import QSize, QThread, Qt
 from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import QSystemTrayIcon
-
-# from app.gui.tray_icon import SystemTray
 from app.gui.widgets import (
     create_singleton_button,
     create_directory_input_layout,
@@ -12,6 +10,7 @@ from app.gui.widgets import (
     create_downloading_process_layout,
     input_line_init,
     create_syncer_test_layout,
+    create_window_bar_widget,
 )
 from app.core.api_auth import YoutubeAuth, SpotifyAuth
 from app.threads.download_worker import DownloadWorker
@@ -23,7 +22,6 @@ from .tray_icon import SystemTray
 class DownAndSync(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("DownAndSync")
         self.setMinimumSize(QSize(600, 400))
 
         self.input_line = None
@@ -57,16 +55,20 @@ class DownAndSync(QMainWindow):
         """Set up main window UI components"""
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         main_layout = QVBoxLayout()
         central_widget.setLayout(main_layout)
 
+        # Styling (This might need a different closeEvent function)
+        main_layout.addWidget(create_window_bar_widget(self))
+
         # Auth buttons
         main_layout.addWidget(
-            create_singleton_button("Authorize Youtube", self.set_youtube_creds)
+            create_singleton_button(self.set_youtube_creds, "Authorize Youtube")
         )
-        main_layout.addWidget(
-            create_singleton_button("Authorize Spotify", self.set_spotify_creds)
-        )
+        # main_layout.addWidget(
+        #     create_singleton_button("Authorize Spotify", self.set_spotify_creds)
+        # )
 
         # Directory input
         self.input_line = input_line_init()

@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Executable
         run: |
-          pyinstaller --onefile --windowed --name DownAndSync --paths . -m app.main
+          pyinstaller --onefile --windowed --name DownAndSync app/main.py
         shell: cmd
 
       - name: Upload Build Artifact

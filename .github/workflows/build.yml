@@ -41,8 +41,7 @@ jobs:
         with:
           files: dist/DownAndSync.exe
           tag_name: ${{ github.run_number }}
-          release_name: "Version ${{ github.run_number }}"
           body: "DownAndSync Release ${{ github.run_number }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
     

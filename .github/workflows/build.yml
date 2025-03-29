@@ -40,7 +40,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: dist/DownAndSync.exe
-          tag_name: ${{ github.run_number }}
+          tag_name: "DownAndSync 1.0.${{ github.run_number }}"
           body: "DownAndSync Release ${{ github.run_number }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}

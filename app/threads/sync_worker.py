@@ -3,6 +3,7 @@ from app.core.api_auth import YoutubeAuth
 from app.core.database import DatabaseManager
 from app.core.youtube_service import fetch_liked_videos
 from app.threads.download_worker import DownloadWorker
+import threading
 
 
 class SyncWorker(QObject):
@@ -19,6 +20,15 @@ class SyncWorker(QObject):
 
     def check_liked_videos(self):
         """Compares liked videos from youtube api to database records. Downloads if missing from DB."""
+
+        # Debugging..
+        def list_active_threads():
+            print("\nActive Threads:")
+            for thread in threading.enumerate():
+                print(f"Name: {thread.name}, Alive: {thread.is_alive()}")
+
+        list_active_threads()
+
         db_manager = DatabaseManager("database.db")
         liked_videos = fetch_liked_videos(self.creds, 10)
         for v in liked_videos:

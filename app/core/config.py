@@ -2,6 +2,8 @@ import json
 from platformdirs import user_data_dir
 import os
 
+# Config file stored in app data / local.
+
 APP_NAME = "DownAndSync"
 CONFIG_FILE = os.path.join(user_data_dir(APP_NAME), "config.json")
 DEFAULT_CONFIG = {"directory_path": ""}

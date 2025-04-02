@@ -44,12 +44,15 @@ class DownAndSync(QMainWindow):
         if self.download_thread and self.download_thread.isRunning():
             self.download_thread.exit()
             self.download_thread.wait()
-        self.hide()
-        self.tray_icon.showMessage(
-            "DownAndSync",
-            "Minimized to system tray",
-            QSystemTrayIcon.MessageIcon.Information,
-        )
+        if self.sync_running:
+            self.hide()
+            self.tray_icon.showMessage(
+                "DownAndSync",
+                "Minimized to system tray",
+                QSystemTrayIcon.MessageIcon.Information,
+            )
+        else:
+            event.accept()
 
     def setup_ui(self):
         """Set up main window UI components"""

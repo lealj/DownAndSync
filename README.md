@@ -1,4 +1,4 @@
-# Built for the purpose of automating the migration of music from "Youtube liked videos" to a Plex Media Server compatible directory.
+# Downloads and stores "Youtube liked videos" in a directory structure, compatible with Plex Media Server.
 
 ### The program currently has two main features:
 1. Automates the downloading of Youtube videos' audio, by gathering your liked videos on Youtube, and downloading them in bulk.

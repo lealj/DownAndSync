@@ -17,7 +17,7 @@ def fetch_liked_videos(creds, maxResults=50) -> list:
     try:
         youtube = build("youtube", "v3", credentials=creds)
         liked_videos = []
-        next_page_token = None  # Start without a page token
+        next_page_token = None
 
         while True:
             # Make a request to the 'videos' endpoint to fetch liked videos
